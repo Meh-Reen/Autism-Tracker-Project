@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import os
+import altair as alt  # 👈 IMPORTED FOR CUSTOM CHARTS
 
 DB_NAME = "autism_progress.db"
 
@@ -158,7 +159,29 @@ def run_query(query, params=()):
 # --- APP STARTS HERE ---
 st.set_page_config(page_title="Autism Progress Tracker", layout="wide")
 
-# Sidebar with reset button
+# ===== 🍎 APPLE iOS FONT (Global) =====
+st.markdown("""
+<style>
+    html, body, [class*="css"] {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .stApp {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .stSidebar * {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-weight: 600 !important;
+    }
+    .stButton > button {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Sidebar with reset button and dynamic colors
 with st.sidebar:
     st.title("🧩 Navigation")
     menu = st.radio("Go to", [
@@ -170,9 +193,23 @@ with st.sidebar:
         "⭐ Consultant Average Ratings"
     ])
     st.markdown("---")
+    
     if st.button("🔄 Reset Database", type="secondary"):
         reset_database()
+    
     child_id = st.number_input("Filter by Child ID (1 or 2)", min_value=1, value=1, step=1)
+    
+    # ===== 🎨 DYNAMIC COLOR PICKERS (LIVE!) =====
+    st.markdown("---")
+    st.subheader("🎨 Chart Colors")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        color_completed = st.color_picker("✅ Completed", "#6B9080")
+        color_parent = st.color_picker("👨‍👦 Parent Rating", "#6B9080")
+    with col2:
+        color_attempted = st.color_picker("🟡 Attempted", "#D4A373")
+        color_consultant = st.color_picker("👩‍⚕️ Consultant", "#CCD5AE")
 
 # Initialize database on first load
 if not os.path.exists(DB_NAME):
@@ -189,7 +226,7 @@ else:
 
 st.title("🧩 Autism Progress-Tracking Dashboard")
 
-# --- QUERY SECTION (same as before) ---
+# --- QUERY SECTION WITH DYNAMIC CHART COLORS ---
 if menu == "📊 Child Progress Logs":
     st.header("Progress Logs for Child")
     query = """SELECT pl.log_date, a.name AS activity, pl.status, pl.parent_rating, pl.notes
@@ -208,8 +245,25 @@ elif menu == "📈 Parent vs Consultant Ratings":
                WHERE pl.child_id = ?;"""
     df = run_query(query, (child_id,))
     st.dataframe(df, use_container_width=True)
+    
+    # 🎨 DYNAMIC CHART: Parent vs Consultant
     if not df.empty:
-        st.bar_chart(df[['parent_rating', 'consultant_rating']].rename(columns={'parent_rating': 'Parent', 'consultant_rating': 'Consultant'}))
+        df_melted = df.melt(id_vars=['child_name'], 
+                            value_vars=['parent_rating', 'consultant_rating'],
+                            var_name='Rating Type', 
+                            value_name='Rating')
+        chart = alt.Chart(df_melted).mark_bar().encode(
+            x=alt.X('child_name:N', title='Child Name'),
+            y=alt.Y('Rating:Q', title='Rating (1-5)'),
+            color=alt.Color('Rating Type:N', 
+                            scale=alt.Scale(
+                                domain=['parent_rating', 'consultant_rating'],
+                                range=[color_parent, color_consultant]  # 👈 LIVE COLORS
+                            ),
+                            legend=alt.Legend(title='Rater')),
+            tooltip=['child_name', 'Rating Type', 'Rating']
+        ).properties(height=400)
+        st.altair_chart(chart, use_container_width=True)
 
 elif menu == "🎯 Recommended Goals & Activities":
     st.header("Personalized Recommendations")
@@ -229,8 +283,25 @@ elif menu == "📋 Progress Summary (Completed/Attempted)":
                FROM PROGRESS_LOG pl JOIN CHILD c ON pl.child_id = c.child_id GROUP BY c.name;"""
     df = run_query(query)
     st.dataframe(df, use_container_width=True)
+    
+    # 🎨 DYNAMIC CHART: Completed vs Attempted
     if not df.empty:
-        st.bar_chart(df.set_index('child_name')[['completed_count', 'attempted_count']])
+        df_melted = df.melt(id_vars=['child_name'], 
+                            value_vars=['completed_count', 'attempted_count'],
+                            var_name='Status', 
+                            value_name='Count')
+        chart = alt.Chart(df_melted).mark_bar().encode(
+            x=alt.X('child_name:N', title='Child Name'),
+            y=alt.Y('Count:Q', title='Number of Activities'),
+            color=alt.Color('Status:N', 
+                            scale=alt.Scale(
+                                domain=['completed_count', 'attempted_count'],
+                                range=[color_completed, color_attempted]  # 👈 LIVE COLORS
+                            ),
+                            legend=alt.Legend(title='Progress')),
+            tooltip=['child_name', 'Status', 'Count']
+        ).properties(height=400)
+        st.altair_chart(chart, use_container_width=True)
 
 elif menu == "⏳ Pending Consultant Reviews":
     st.header("Logs Awaiting Review")
