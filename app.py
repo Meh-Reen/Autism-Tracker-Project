@@ -181,6 +181,97 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ===== 🌓 CUSTOM LIGHT & DARK MODE (SAGE GREEN THEME) =====
+st.markdown("""
+<style>
+    /* ===== LIGHT MODE (Your beautiful sage) ===== */
+    [data-theme="light"] .stApp {
+        background: #F7F5F0;
+    }
+    [data-theme="light"] .stSidebar {
+        background: #E8F0ED;
+        border-right: 1px solid #D4DCD9;
+    }
+    [data-theme="light"] .stSidebar * {
+        color: #243746 !important;
+    }
+    [data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3 {
+        color: #243746 !important;
+    }
+    [data-theme="light"] .stDataFrame thead th {
+        background-color: #E8F0ED !important;
+        color: #243746 !important;
+    }
+    [data-theme="light"] .stDataFrame tbody td {
+        background-color: #F7F5F0 !important;
+        color: #243746 !important;
+    }
+    [data-theme="light"] .stMetric {
+        background: #FFFFFF !important;
+        border: 1px solid #E8F0ED !important;
+    }
+    [data-theme="light"] .stAlert {
+        background: #E8F0ED !important;
+        color: #243746 !important;
+    }
+    [data-theme="light"] .stButton > button {
+        background: #6B9080 !important;
+        color: white !important;
+    }
+    
+    /* ===== DARK MODE (Matching sage green) ===== */
+    [data-theme="dark"] .stApp {
+        background: #1A2B29;
+    }
+    [data-theme="dark"] .stSidebar {
+        background: #243A36;
+        border-right: 1px solid #2D4A45;
+    }
+    [data-theme="dark"] .stSidebar * {
+        color: #E8F0ED !important;
+    }
+    [data-theme="dark"] .stSidebar h1 {
+        color: #8AA79A !important;
+    }
+    [data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3 {
+        color: #8AA79A !important;
+    }
+    [data-theme="dark"] .stDataFrame thead th {
+        background-color: #243A36 !important;
+        color: #E8F0ED !important;
+    }
+    [data-theme="dark"] .stDataFrame tbody td {
+        background-color: #1A2B29 !important;
+        color: #CBD5D1 !important;
+    }
+    [data-theme="dark"] .stMetric {
+        background: #243A36 !important;
+        border: 1px solid #2D4A45 !important;
+        color: #E8F0ED !important;
+    }
+    [data-theme="dark"] .stAlert {
+        background: #243A36 !important;
+        color: #E8F0ED !important;
+    }
+    [data-theme="dark"] .stButton > button {
+        background: #8AA79A !important;
+        color: #1A2B29 !important;
+    }
+    [data-theme="dark"] .stButton > button:hover {
+        background: #9BB8AA !important;
+    }
+    [data-theme="dark"] .stNumberInput input {
+        background-color: #243A36 !important;
+        color: #E8F0ED !important;
+        border-color: #2D4A45 !important;
+    }
+    [data-theme="dark"] .stSelectbox select {
+        background-color: #243A36 !important;
+        color: #E8F0ED !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Sidebar with reset button and dynamic colors
 with st.sidebar:
     st.title("🧩 Navigation")
@@ -210,6 +301,33 @@ with st.sidebar:
     with col2:
         color_attempted = st.color_picker("🟡 Attempted", "#D4A373")
         color_consultant = st.color_picker("👩‍⚕️ Consultant", "#CCD5AE")
+    
+    # ===== 🌓 DARK MODE TOGGLE BUTTON =====
+    st.markdown("---")
+    st.subheader("🌓 Theme")
+    st.caption("Click the button below to switch between Light and Dark mode")
+    
+    if st.button("🌙 Toggle Dark / Light Mode", type="primary"):
+        # Force dark mode toggle via JavaScript
+        st.markdown("""
+            <script>
+                const themeToggle = document.querySelector('[data-testid="stThemeToggle"]');
+                if (themeToggle) {
+                    themeToggle.click();
+                } else {
+                    // Fallback: try to find the settings gear
+                    const settingsGear = document.querySelector('[data-testid="stSettings"]');
+                    if (settingsGear) {
+                        settingsGear.click();
+                        setTimeout(() => {
+                            const darkOption = document.querySelector('[data-testid="stThemeToggle"]');
+                            if (darkOption) darkOption.click();
+                        }, 500);
+                    }
+                }
+            </script>
+        """, unsafe_allow_html=True)
+        st.rerun()
 
 # Initialize database on first load
 if not os.path.exists(DB_NAME):
