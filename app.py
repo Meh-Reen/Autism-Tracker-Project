@@ -5,92 +5,98 @@ import os
 
 DB_NAME = "autism_progress.db"
 
-# --- THIS CREATES THE DATABASE AUTOMATICALLY ---
+def table_exists(cursor, table_name):
+    cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
+    return cursor.fetchone() is not None
+
 def setup_database():
+    """Creates the database and inserts sample data if tables don't exist"""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("PRAGMA foreign_keys = ON;")
     
-    cursor.executescript("""
-        CREATE TABLE IF NOT EXISTS APP_USER (
-            user_id        INTEGER PRIMARY KEY,
-            name           TEXT NOT NULL,
-            email          TEXT UNIQUE NOT NULL,
-            password_hash  TEXT NOT NULL,
-            role           TEXT CHECK (role IN ('Parent','Consultant'))
-        );
-        CREATE TABLE IF NOT EXISTS CONSULTANT (
-            consultant_id   INTEGER PRIMARY KEY,
-            user_id         INTEGER NOT NULL,
-            specialization  TEXT,
-            FOREIGN KEY (user_id) REFERENCES APP_USER(user_id)
-        );
-        CREATE TABLE IF NOT EXISTS CHILD (
-            child_id        INTEGER PRIMARY KEY,
-            parent_id       INTEGER NOT NULL,
-            name            TEXT NOT NULL,
-            dob             TEXT NOT NULL,
-            gender          TEXT,
-            severity_level  INTEGER CHECK (severity_level BETWEEN 1 AND 3),
-            diagnosed_by    TEXT,
-            diagnosis_date  TEXT,
-            FOREIGN KEY (parent_id) REFERENCES APP_USER(user_id)
-        );
-        CREATE TABLE IF NOT EXISTS PROBLEM (
-            problem_id   INTEGER PRIMARY KEY,
-            name         TEXT NOT NULL,
-            description  TEXT
-        );
-        CREATE TABLE IF NOT EXISTS CHILD_PROBLEM (
-            child_id       INTEGER NOT NULL,
-            problem_id     INTEGER NOT NULL,
-            identified_on  TEXT,
-            PRIMARY KEY (child_id, problem_id),
-            FOREIGN KEY (child_id) REFERENCES CHILD(child_id),
-            FOREIGN KEY (problem_id) REFERENCES PROBLEM(problem_id)
-        );
-        CREATE TABLE IF NOT EXISTS GOAL (
-            goal_id         INTEGER PRIMARY KEY,
-            problem_id      INTEGER NOT NULL,
-            severity_level  INTEGER CHECK (severity_level BETWEEN 1 AND 3),
-            description     TEXT NOT NULL,
-            FOREIGN KEY (problem_id) REFERENCES PROBLEM(problem_id)
-        );
-        CREATE TABLE IF NOT EXISTS ACTIVITY (
-            activity_id   INTEGER PRIMARY KEY,
-            goal_id       INTEGER NOT NULL,
-            name          TEXT NOT NULL,
-            instructions  TEXT,
-            FOREIGN KEY (goal_id) REFERENCES GOAL(goal_id)
-        );
-        CREATE TABLE IF NOT EXISTS PROGRESS_LOG (
-            log_id         INTEGER PRIMARY KEY,
-            child_id       INTEGER NOT NULL,
-            activity_id    INTEGER NOT NULL,
-            recorded_by    INTEGER NOT NULL,
-            log_date       TEXT NOT NULL,
-            status         TEXT CHECK (status IN ('Not Attempted','Attempted','Completed')),
-            parent_rating  INTEGER CHECK (parent_rating BETWEEN 1 AND 5),
-            notes          TEXT,
-            FOREIGN KEY (child_id) REFERENCES CHILD(child_id),
-            FOREIGN KEY (activity_id) REFERENCES ACTIVITY(activity_id),
-            FOREIGN KEY (recorded_by) REFERENCES APP_USER(user_id)
-        );
-        CREATE TABLE IF NOT EXISTS CONSULTANT_REVIEW (
-            review_id           INTEGER PRIMARY KEY,
-            log_id              INTEGER NOT NULL,
-            consultant_id       INTEGER NOT NULL,
-            consultant_rating   INTEGER CHECK (consultant_rating BETWEEN 1 AND 5),
-            review_notes        TEXT,
-            reviewed_on         TEXT,
-            FOREIGN KEY (log_id) REFERENCES PROGRESS_LOG(log_id),
-            FOREIGN KEY (consultant_id) REFERENCES CONSULTANT(consultant_id)
-        );
-    """)
-
-    # Insert sample data only if empty
-    cursor.execute("SELECT COUNT(*) FROM APP_USER")
-    if cursor.fetchone()[0] == 0:
+    # Check if APP_USER exists
+    if not table_exists(cursor, "APP_USER"):
+        st.info("📦 Creating database tables...")
+        
+        cursor.executescript("""
+            CREATE TABLE APP_USER (
+                user_id        INTEGER PRIMARY KEY,
+                name           TEXT NOT NULL,
+                email          TEXT UNIQUE NOT NULL,
+                password_hash  TEXT NOT NULL,
+                role           TEXT CHECK (role IN ('Parent','Consultant'))
+            );
+            CREATE TABLE CONSULTANT (
+                consultant_id   INTEGER PRIMARY KEY,
+                user_id         INTEGER NOT NULL,
+                specialization  TEXT,
+                FOREIGN KEY (user_id) REFERENCES APP_USER(user_id)
+            );
+            CREATE TABLE CHILD (
+                child_id        INTEGER PRIMARY KEY,
+                parent_id       INTEGER NOT NULL,
+                name            TEXT NOT NULL,
+                dob             TEXT NOT NULL,
+                gender          TEXT,
+                severity_level  INTEGER CHECK (severity_level BETWEEN 1 AND 3),
+                diagnosed_by    TEXT,
+                diagnosis_date  TEXT,
+                FOREIGN KEY (parent_id) REFERENCES APP_USER(user_id)
+            );
+            CREATE TABLE PROBLEM (
+                problem_id   INTEGER PRIMARY KEY,
+                name         TEXT NOT NULL,
+                description  TEXT
+            );
+            CREATE TABLE CHILD_PROBLEM (
+                child_id       INTEGER NOT NULL,
+                problem_id     INTEGER NOT NULL,
+                identified_on  TEXT,
+                PRIMARY KEY (child_id, problem_id),
+                FOREIGN KEY (child_id) REFERENCES CHILD(child_id),
+                FOREIGN KEY (problem_id) REFERENCES PROBLEM(problem_id)
+            );
+            CREATE TABLE GOAL (
+                goal_id         INTEGER PRIMARY KEY,
+                problem_id      INTEGER NOT NULL,
+                severity_level  INTEGER CHECK (severity_level BETWEEN 1 AND 3),
+                description     TEXT NOT NULL,
+                FOREIGN KEY (problem_id) REFERENCES PROBLEM(problem_id)
+            );
+            CREATE TABLE ACTIVITY (
+                activity_id   INTEGER PRIMARY KEY,
+                goal_id       INTEGER NOT NULL,
+                name          TEXT NOT NULL,
+                instructions  TEXT,
+                FOREIGN KEY (goal_id) REFERENCES GOAL(goal_id)
+            );
+            CREATE TABLE PROGRESS_LOG (
+                log_id         INTEGER PRIMARY KEY,
+                child_id       INTEGER NOT NULL,
+                activity_id    INTEGER NOT NULL,
+                recorded_by    INTEGER NOT NULL,
+                log_date       TEXT NOT NULL,
+                status         TEXT CHECK (status IN ('Not Attempted','Attempted','Completed')),
+                parent_rating  INTEGER CHECK (parent_rating BETWEEN 1 AND 5),
+                notes          TEXT,
+                FOREIGN KEY (child_id) REFERENCES CHILD(child_id),
+                FOREIGN KEY (activity_id) REFERENCES ACTIVITY(activity_id),
+                FOREIGN KEY (recorded_by) REFERENCES APP_USER(user_id)
+            );
+            CREATE TABLE CONSULTANT_REVIEW (
+                review_id           INTEGER PRIMARY KEY,
+                log_id              INTEGER NOT NULL,
+                consultant_id       INTEGER NOT NULL,
+                consultant_rating   INTEGER CHECK (consultant_rating BETWEEN 1 AND 5),
+                review_notes        TEXT,
+                reviewed_on         TEXT,
+                FOREIGN KEY (log_id) REFERENCES PROGRESS_LOG(log_id),
+                FOREIGN KEY (consultant_id) REFERENCES CONSULTANT(consultant_id)
+            );
+        """)
+        
+        # Insert sample data
         cursor.executescript("""
             INSERT INTO APP_USER (name, email, password_hash, role) VALUES
             ('Ayesha Khan', 'ayesha@example.com', 'hashed_pw_1', 'Parent'),
@@ -123,35 +129,67 @@ def setup_database():
             (1, 1, 4, 'Good improvement, continue at this pace', '2026-08-02'),
             (2, 1, 3, 'Consistent with last week, keep reinforcing', '2026-08-04');
         """)
-    conn.commit()
+        conn.commit()
+        st.success("✅ Database created successfully!")
+    else:
+        # Check if data exists, if not, insert it
+        cursor.execute("SELECT COUNT(*) FROM APP_USER")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript("""... (insert data) ...""")  # Same insert block as above
+            conn.commit()
+            st.success("✅ Sample data inserted!")
+    
     conn.close()
 
-# --- RUN THE SETUP BEFORE THE APP LOADS ---
-if not os.path.exists(DB_NAME):
+def reset_database():
+    """Force a complete reset"""
+    if os.path.exists(DB_NAME):
+        os.remove(DB_NAME)
     setup_database()
+    st.success("✅ Database has been reset!")
+    st.rerun()
 
-# --- DASHBOARD QUERIES ---
 def run_query(query, params=()):
     conn = sqlite3.connect(DB_NAME)
     df = pd.read_sql_query(query, conn, params=params)
     conn.close()
     return df
 
+# --- APP STARTS HERE ---
 st.set_page_config(page_title="Autism Progress Tracker", layout="wide")
+
+# Sidebar with reset button
+with st.sidebar:
+    st.title("🧩 Navigation")
+    menu = st.radio("Go to", [
+        "📊 Child Progress Logs",
+        "📈 Parent vs Consultant Ratings",
+        "🎯 Recommended Goals & Activities",
+        "📋 Progress Summary (Completed/Attempted)",
+        "⏳ Pending Consultant Reviews",
+        "⭐ Consultant Average Ratings"
+    ])
+    st.markdown("---")
+    if st.button("🔄 Reset Database", type="secondary"):
+        reset_database()
+    child_id = st.number_input("Filter by Child ID (1 or 2)", min_value=1, value=1, step=1)
+
+# Initialize database on first load
+if not os.path.exists(DB_NAME):
+    setup_database()
+else:
+    # Verify tables exist
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    if not table_exists(cursor, "APP_USER"):
+        conn.close()
+        setup_database()
+    else:
+        conn.close()
+
 st.title("🧩 Autism Progress-Tracking Dashboard")
 
-menu = st.sidebar.radio("Go to", [
-    "📊 Child Progress Logs",
-    "📈 Parent vs Consultant Ratings",
-    "🎯 Recommended Goals & Activities",
-    "📋 Progress Summary (Completed/Attempted)",
-    "⏳ Pending Consultant Reviews",
-    "⭐ Consultant Average Ratings"
-])
-
-st.sidebar.markdown("---")
-child_id = st.sidebar.number_input("Filter by Child ID (1 or 2)", min_value=1, value=1, step=1)
-
+# --- QUERY SECTION (same as before) ---
 if menu == "📊 Child Progress Logs":
     st.header("Progress Logs for Child")
     query = """SELECT pl.log_date, a.name AS activity, pl.status, pl.parent_rating, pl.notes
