@@ -146,18 +146,35 @@ def reset_database():
     st.success("✅ Database has been reset!")
     st.rerun()
 
+def clean_column_name(col):
+    """Convert snake_case to Title Case with spaces"""
+    # Remove underscores and capitalize each word
+    words = col.split('_')
+    return ' '.join(word.capitalize() for word in words)
+
 def run_query(query, params=()):
     conn = sqlite3.connect(DB_NAME)
     df = pd.read_sql_query(query, conn, params=params)
     conn.close()
+    # Clean column names
+    df.columns = [clean_column_name(col) for col in df.columns]
     return df
 
 # --- APP STARTS HERE ---
 st.set_page_config(page_title="🧠 Autism Hacked", layout="wide")
 
-# ===== 🎨 COMPLETE THEME (Montserrat + Confetti Colors) =====
+# ===== 🎨 COMPLETE THEME (Montserrat + Confetti Colors + FORCE LIGHT MODE) =====
 st.markdown("""
 <style>
+    /* ===== FORCE LIGHT MODE - FIX FOR CHROME DARK MODE ===== */
+    * {
+        color-scheme: light !important;
+    }
+    
+    .stApp {
+        color-scheme: light !important;
+    }
+    
     /* ===== FONT: MONTSERRAT ===== */
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
 
@@ -187,7 +204,6 @@ st.markdown("""
         background-attachment: fixed;
     }
 
-    /* White overlay so text is readable */
     .stApp::before {
         content: '';
         position: fixed;
@@ -262,7 +278,6 @@ st.markdown("""
         transform: translateY(0px) !important;
     }
 
-    /* Reset Database button */
     .stButton > button[data-baseweb="button"]:nth-child(1) {
         background: linear-gradient(135deg, #FFB865, #FF9999) !important;
         box-shadow: 0 4px 15px rgba(255, 185, 101, 0.3) !important;
@@ -272,7 +287,7 @@ st.markdown("""
         box-shadow: 0 8px 30px rgba(255, 185, 101, 0.5) !important;
     }
 
-    /* ===== METRICS / CARDS - FIXED! ===== */
+    /* ===== METRICS / CARDS ===== */
     .stMetric {
         background: rgba(255, 255, 255, 0.95) !important;
         backdrop-filter: blur(10px) !important;
@@ -313,6 +328,7 @@ st.markdown("""
         font-weight: 600 !important;
         font-family: 'Montserrat', sans-serif !important;
         padding: 12px !important;
+        text-transform: capitalize !important;
     }
 
     .stDataFrame tbody td {
@@ -339,7 +355,6 @@ st.markdown("""
         color: #2D3436 !important;
     }
 
-    /* ===== SUCCESS MESSAGES ===== */
     .stAlert[data-baseweb="notification"] {
         border-left-color: #D2EE6E !important;
     }
@@ -369,7 +384,7 @@ st.markdown("""
         color: #2D3436 !important;
     }
 
-    /* ===== RADIO BUTTONS (Sidebar Menu) ===== */
+    /* ===== RADIO BUTTONS ===== */
     .stRadio > div {
         background: rgba(255, 255, 255, 0.6) !important;
         border-radius: 12px !important;
@@ -463,7 +478,6 @@ st.markdown("""
         font-weight: 400 !important;
     }
 
-    /* ===== SIDEBAR COLOR PICKER LABELS ===== */
     .stSidebar .stColorPicker label {
         color: #2D3436 !important;
         font-weight: 500 !important;
@@ -536,20 +550,20 @@ elif menu == "📈 Parent vs Consultant Ratings":
     st.dataframe(df, use_container_width=True)
     
     if not df.empty:
-        df_melted = df.melt(id_vars=['child_name'], 
-                            value_vars=['parent_rating', 'consultant_rating'],
+        df_melted = df.melt(id_vars=['Child Name'], 
+                            value_vars=['Parent Rating', 'Consultant Rating'],
                             var_name='Rating Type', 
                             value_name='Rating')
         chart = alt.Chart(df_melted).mark_bar().encode(
-            x=alt.X('child_name:N', title='Child Name'),
+            x=alt.X('Child Name:N', title=''),  # Remove x-axis label
             y=alt.Y('Rating:Q', title='Rating (1-5)'),
             color=alt.Color('Rating Type:N', 
                             scale=alt.Scale(
-                                domain=['parent_rating', 'consultant_rating'],
+                                domain=['Parent Rating', 'Consultant Rating'],
                                 range=[color_parent, color_consultant]
                             ),
-                            legend=alt.Legend(title='Rater')),
-            tooltip=['child_name', 'Rating Type', 'Rating']
+                            legend=alt.Legend(title='')),
+            tooltip=['Child Name', 'Rating Type', 'Rating']
         ).properties(height=400)
         st.altair_chart(chart, use_container_width=True)
 
@@ -573,20 +587,20 @@ elif menu == "📋 Progress Summary (Completed/Attempted)":
     st.dataframe(df, use_container_width=True)
     
     if not df.empty:
-        df_melted = df.melt(id_vars=['child_name'], 
-                            value_vars=['completed_count', 'attempted_count'],
+        df_melted = df.melt(id_vars=['Child Name'], 
+                            value_vars=['Completed Count', 'Attempted Count'],
                             var_name='Status', 
                             value_name='Count')
         chart = alt.Chart(df_melted).mark_bar().encode(
-            x=alt.X('child_name:N', title='Child Name'),
+            x=alt.X('Child Name:N', title=''),  # Remove x-axis label
             y=alt.Y('Count:Q', title='Number of Activities'),
             color=alt.Color('Status:N', 
                             scale=alt.Scale(
-                                domain=['completed_count', 'attempted_count'],
+                                domain=['Completed Count', 'Attempted Count'],
                                 range=[color_completed, color_attempted]
                             ),
-                            legend=alt.Legend(title='Progress')),
-            tooltip=['child_name', 'Status', 'Count']
+                            legend=alt.Legend(title='')),
+            tooltip=['Child Name', 'Status', 'Count']
         ).properties(height=400)
         st.altair_chart(chart, use_container_width=True)
 
@@ -608,4 +622,4 @@ elif menu == "⭐ Consultant Average Ratings":
     df = run_query(query)
     st.dataframe(df, use_container_width=True)
     if not df.empty:
-        st.metric("Overall Avg Rating", f"{df['avg_rating'].mean():.2f} ⭐")
+        st.metric("Overall Avg Rating", f"{df['Avg Rating'].mean():.2f} ⭐")
