@@ -2,7 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import os
-import altair as alt  # 👈 IMPORTED FOR CUSTOM CHARTS
+import altair as alt
 
 DB_NAME = "autism_progress.db"
 
@@ -16,7 +16,6 @@ def setup_database():
     cursor = conn.cursor()
     cursor.execute("PRAGMA foreign_keys = ON;")
     
-    # Check if APP_USER exists
     if not table_exists(cursor, "APP_USER"):
         st.info("📦 Creating database tables...")
         
@@ -97,7 +96,6 @@ def setup_database():
             );
         """)
         
-        # Insert sample data
         cursor.executescript("""
             INSERT INTO APP_USER (name, email, password_hash, role) VALUES
             ('Ayesha Khan', 'ayesha@example.com', 'hashed_pw_1', 'Parent'),
@@ -133,17 +131,15 @@ def setup_database():
         conn.commit()
         st.success("✅ Database created successfully!")
     else:
-        # Check if data exists, if not, insert it
         cursor.execute("SELECT COUNT(*) FROM APP_USER")
         if cursor.fetchone()[0] == 0:
-            cursor.executescript("""... (insert data) ...""")  # Same insert block as above
+            cursor.executescript("""... (insert data) ...""")
             conn.commit()
             st.success("✅ Sample data inserted!")
     
     conn.close()
 
 def reset_database():
-    """Force a complete reset"""
     if os.path.exists(DB_NAME):
         os.remove(DB_NAME)
     setup_database()
@@ -157,133 +153,41 @@ def run_query(query, params=()):
     return df
 
 # --- APP STARTS HERE ---
-st.set_page_config(page_title="Autism Progress Tracker", layout="wide")
+st.set_page_config(page_title="Autism Hacked", layout="wide")
 
-# ===== 🍎 APPLE iOS FONT (Global) =====
+# ===== 🎨 COMPLETE THEME (Montserrat + Confetti Colors) =====
 st.markdown("""
 <style>
+    /* ===== FONT: MONTSERRAT ===== */
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+
     html, body, [class*="css"] {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    .stApp {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    .stSidebar * {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    h1, h2, h3, h4, h5, h6 {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        font-weight: 600 !important;
-    }
-    .stButton > button {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# ===== 🌓 CUSTOM LIGHT & DARK MODE (SAGE GREEN THEME) =====
-st.markdown("""
-<style>
-    /* ===== LIGHT MODE (Your beautiful sage) ===== */
-    [data-theme="light"] .stApp {
-        background: #F7F5F0;
-    }
-    [data-theme="light"] .stSidebar {
-        background: #E8F0ED;
-        border-right: 1px solid #D4DCD9;
-    }
-    [data-theme="light"] .stSidebar * {
-        color: #243746 !important;
-    }
-    [data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3 {
-        color: #243746 !important;
-    }
-    [data-theme="light"] .stDataFrame thead th {
-        background-color: #E8F0ED !important;
-        color: #243746 !important;
-    }
-    [data-theme="light"] .stDataFrame tbody td {
-        background-color: #F7F5F0 !important;
-        color: #243746 !important;
-    }
-    [data-theme="light"] .stMetric {
-        background: #FFFFFF !important;
-        border: 1px solid #E8F0ED !important;
-    }
-    [data-theme="light"] .stAlert {
-        background: #E8F0ED !important;
-        color: #243746 !important;
-    }
-    [data-theme="light"] .stButton > button {
-        background: #6B9080 !important;
-        color: white !important;
+        font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
-    /* ===== DARK MODE (Matching sage green) ===== */
-    [data-theme="dark"] .stApp {
-        background: #1A2B29;
-    }
-    [data-theme="dark"] .stSidebar {
-        background: #243A36;
-        border-right: 1px solid #2D4A45;
-    }
-    [data-theme="dark"] .stSidebar * {
-        color: #E8F0ED !important;
-    }
-    [data-theme="dark"] .stSidebar h1 {
-        color: #8AA79A !important;
-    }
-    [data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3 {
-        color: #8AA79A !important;
-    }
-    [data-theme="dark"] .stDataFrame thead th {
-        background-color: #243A36 !important;
-        color: #E8F0ED !important;
-    }
-    [data-theme="dark"] .stDataFrame tbody td {
-        background-color: #1A2B29 !important;
-        color: #CBD5D1 !important;
-    }
-    [data-theme="dark"] .stMetric {
-        background: #243A36 !important;
-        border: 1px solid #2D4A45 !important;
-        color: #E8F0ED !important;
-    }
-    [data-theme="dark"] .stAlert {
-        background: #243A36 !important;
-        color: #E8F0ED !important;
-    }
-    [data-theme="dark"] .stButton > button {
-        background: #8AA79A !important;
-        color: #1A2B29 !important;
-    }
-    [data-theme="dark"] .stButton > button:hover {
-        background: #9BB8AA !important;
-    }
-    [data-theme="dark"] .stNumberInput input {
-        background-color: #243A36 !important;
-        color: #E8F0ED !important;
-        border-color: #2D4A45 !important;
-    }
-    [data-theme="dark"] .stSelectbox select {
-        background-color: #243A36 !important;
-        color: #E8F0ED !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# ===== 🎉 CONFETTI BACKGROUND =====
-st.markdown("""
-<style>
-    /* Set the main background to your confetti image */
     .stApp {
-        background-image: url('https://raw.githubusercontent.com/Meh-Reen/Autism-Tracker-Project/refs/heads/main/confetti.png');
+        font-family: 'Montserrat', sans-serif;
+    }
+    
+    .stSidebar * {
+        font-family: 'Montserrat', sans-serif;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em;
+    }
+
+    /* ===== CONFETTI BACKGROUND ===== */
+    .stApp {
+        background-image: url('https://raw.githubusercontent.com/Meh-Reen/Autism-Tracker-Project/main/confetti.png');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }
 
-    /* Add a semi-transparent overlay so text stays readable */
+    /* White overlay so text is readable */
     .stApp::before {
         content: '';
         position: fixed;
@@ -291,25 +195,270 @@ st.markdown("""
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(255, 255, 255, 0.85); /* White overlay, 85% opacity */
+        background-color: rgba(248, 246, 240, 0.88);
         z-index: -1;
     }
 
-    /* Make sure the app content sits above the overlay */
     .stApp {
         z-index: 1;
     }
 
-    /* For DARK MODE: Use a dark overlay so text is still readable */
-    [data-theme="dark"] .stApp::before {
-        background-color: rgba(0, 0, 0, 0.80); /* Dark overlay, 80% opacity */
+    /* ===== HEADERS ===== */
+    h1 {
+        color: #2D3436 !important;
+        font-weight: 800 !important;
+        font-size: 2.8rem !important;
+        padding-bottom: 8px !important;
+        border-bottom: 4px solid #81BEE4 !important;
+        display: inline-block !important;
+    }
+
+    h2, h3 {
+        color: #2D3436 !important;
+        font-weight: 600 !important;
+    }
+
+    /* ===== SIDEBAR ===== */
+    .stSidebar {
+        background: #F0EDE6 !important;
+        border-right: 2px solid rgba(129, 190, 228, 0.3) !important;
+        padding-top: 20px !important;
+    }
+
+    .stSidebar * {
+        color: #2D3436 !important;
+    }
+
+    .stSidebar h1 {
+        color: #2D3436 !important;
+        border-bottom-color: #81BEE4 !important;
+    }
+
+    .stSidebar .stSubheader {
+        color: #81BEE4 !important;
+        font-weight: 600 !important;
+    }
+
+    /* ===== BUTTONS ===== */
+    .stButton > button {
+        background: linear-gradient(135deg, #81BEE4, #C898DF) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 30px !important;
+        padding: 12px 32px !important;
+        font-family: 'Montserrat', sans-serif !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(129, 190, 228, 0.3) !important;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-3px) !important;
+        box-shadow: 0 8px 30px rgba(129, 190, 228, 0.5) !important;
+        background: linear-gradient(135deg, #C898DF, #81BEE4) !important;
+    }
+
+    .stButton > button:active {
+        transform: translateY(0px) !important;
+    }
+
+    /* Reset Database button */
+    .stButton > button[data-baseweb="button"]:nth-child(1) {
+        background: linear-gradient(135deg, #FFB865, #FF9999) !important;
+        box-shadow: 0 4px 15px rgba(255, 185, 101, 0.3) !important;
+    }
+
+    .stButton > button[data-baseweb="button"]:nth-child(1):hover {
+        box-shadow: 0 8px 30px rgba(255, 185, 101, 0.5) !important;
+    }
+
+    /* ===== METRICS / CARDS ===== */
+    .stMetric {
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(10px) !important;
+        border-radius: 20px !important;
+        padding: 20px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+        border: 1px solid rgba(129, 190, 228, 0.15) !important;
+    }
+
+    .stMetric label {
+        color: #6B7280 !important;
+        font-weight: 500 !important;
+    }
+
+    .stMetric .stMetricValue {
+        color: #2D3436 !important;
+        font-weight: 700 !important;
+    }
+
+    /* ===== DATAFRAMES ===== */
+    .stDataFrame {
+        border-radius: 16px !important;
+        overflow: hidden !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+        border: 1px solid rgba(129, 190, 228, 0.1) !important;
+    }
+
+    .stDataFrame thead th {
+        background: #81BEE4 !important;
+        color: white !important;
+        font-weight: 600 !important;
+        font-family: 'Montserrat', sans-serif !important;
+    }
+
+    .stDataFrame tbody td {
+        background: white !important;
+        color: #2D3436 !important;
+        font-family: 'Montserrat', sans-serif !important;
+    }
+
+    .stDataFrame tbody tr:hover td {
+        background: #F0EDE6 !important;
+    }
+
+    /* ===== ALERTS ===== */
+    .stAlert {
+        border-radius: 16px !important;
+        border-left: 5px solid #81BEE4 !important;
+        background: rgba(255, 255, 255, 0.9) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    /* ===== SUCCESS MESSAGES ===== */
+    .stAlert[data-baseweb="notification"] {
+        border-left-color: #D2EE6E !important;
+    }
+
+    /* ===== NUMBER INPUT ===== */
+    .stNumberInput input {
+        border-radius: 25px !important;
+        border: 2px solid #81BEE4 !important;
+        padding: 8px 16px !important;
+        font-family: 'Montserrat', sans-serif !important;
+        background: white !important;
+        color: #2D3436 !important;
+    }
+
+    .stNumberInput input:focus {
+        border-color: #C898DF !important;
+        box-shadow: 0 0 0 3px rgba(200, 152, 223, 0.2) !important;
+    }
+
+    /* ===== SELECT BOX ===== */
+    .stSelectbox select {
+        border-radius: 25px !important;
+        border: 2px solid #81BEE4 !important;
+        padding: 8px 16px !important;
+        font-family: 'Montserrat', sans-serif !important;
+        background: white !important;
+        color: #2D3436 !important;
+    }
+
+    /* ===== RADIO BUTTONS (Sidebar Menu) ===== */
+    .stRadio > div {
+        background: rgba(255, 255, 255, 0.5) !important;
+        border-radius: 12px !important;
+        padding: 8px !important;
+    }
+
+    .stRadio label {
+        font-family: 'Montserrat', sans-serif !important;
+        font-weight: 500 !important;
+        padding: 6px 12px !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .stRadio label:hover {
+        background: rgba(129, 190, 228, 0.1) !important;
+    }
+
+    .stRadio .stRadioChecked {
+        background: #81BEE4 !important;
+        color: white !important;
+        border-radius: 8px !important;
+    }
+
+    /* ===== FORMS ===== */
+    .stForm {
+        background: rgba(255, 255, 255, 0.7) !important;
+        backdrop-filter: blur(10px) !important;
+        border-radius: 20px !important;
+        padding: 20px !important;
+        border: 1px solid rgba(129, 190, 228, 0.1) !important;
+    }
+
+    /* ===== EXPANDER ===== */
+    .streamlit-expanderHeader {
+        font-family: 'Montserrat', sans-serif !important;
+        font-weight: 600 !important;
+        color: #2D3436 !important;
+        background: rgba(255, 255, 255, 0.5) !important;
+        border-radius: 12px !important;
+    }
+
+    /* ===== SLIDER ===== */
+    .stSlider .stSliderTrack {
+        background: #81BEE4 !important;
+    }
+
+    .stSlider .stSliderThumb {
+        background: #C898DF !important;
+        border: 3px solid white !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    /* ===== DIVIDERS ===== */
+    hr {
+        border: none !important;
+        height: 2px !important;
+        background: linear-gradient(90deg, #81BEE4, #C898DF, #FFB865, #FF9999, #D2EE6E) !important;
+        opacity: 0.5 !important;
+        margin: 20px 0 !important;
+    }
+
+    /* ===== COLOR PICKERS ===== */
+    .stColorPicker {
+        border-radius: 25px !important;
+    }
+
+    /* ===== TABS ===== */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px !important;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 30px !important;
+        padding: 8px 20px !important;
+        font-family: 'Montserrat', sans-serif !important;
+        font-weight: 500 !important;
+        background: rgba(255, 255, 255, 0.5) !important;
+        color: #6B7280 !important;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: #81BEE4 !important;
+        color: white !important;
+    }
+
+    /* ===== SIDEBAR SUBTEXT ===== */
+    .stSidebar .stCaption {
+        color: #6B7280 !important;
+        font-weight: 400 !important;
+    }
+
+    /* ===== SIDEBAR COLOR PICKER LABELS ===== */
+    .stSidebar .stColorPicker label {
+        color: #2D3436 !important;
+        font-weight: 500 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Sidebar with reset button and dynamic colors
 with st.sidebar:
-    st.title("🧩 Navigation")
+    st.title("🧩 Autism Hacked")
     menu = st.radio("Go to", [
         "📊 Child Progress Logs",
         "📈 Parent vs Consultant Ratings",
@@ -331,44 +480,16 @@ with st.sidebar:
     
     col1, col2 = st.columns(2)
     with col1:
-        color_completed = st.color_picker("✅ Completed", "#6B9080")
-        color_parent = st.color_picker("👨‍👦 Parent Rating", "#6B9080")
+        color_completed = st.color_picker("✅ Completed", "#D2EE6E")
+        color_parent = st.color_picker("👨‍👦 Parent Rating", "#81BEE4")
     with col2:
-        color_attempted = st.color_picker("🟡 Attempted", "#D4A373")
-        color_consultant = st.color_picker("👩‍⚕️ Consultant", "#CCD5AE")
-    
-    # ===== 🌓 DARK MODE TOGGLE BUTTON =====
-    st.markdown("---")
-    st.subheader("🌓 Theme")
-    st.caption("Click the button below to switch between Light and Dark mode")
-    
-    if st.button("🌙 Toggle Dark / Light Mode", type="primary"):
-        # Force dark mode toggle via JavaScript
-        st.markdown("""
-            <script>
-                const themeToggle = document.querySelector('[data-testid="stThemeToggle"]');
-                if (themeToggle) {
-                    themeToggle.click();
-                } else {
-                    // Fallback: try to find the settings gear
-                    const settingsGear = document.querySelector('[data-testid="stSettings"]');
-                    if (settingsGear) {
-                        settingsGear.click();
-                        setTimeout(() => {
-                            const darkOption = document.querySelector('[data-testid="stThemeToggle"]');
-                            if (darkOption) darkOption.click();
-                        }, 500);
-                    }
-                }
-            </script>
-        """, unsafe_allow_html=True)
-        st.rerun()
+        color_attempted = st.color_picker("🟡 Attempted", "#FFB865")
+        color_consultant = st.color_picker("👩‍⚕️ Consultant", "#C898DF")
 
 # Initialize database on first load
 if not os.path.exists(DB_NAME):
     setup_database()
 else:
-    # Verify tables exist
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     if not table_exists(cursor, "APP_USER"):
@@ -377,7 +498,7 @@ else:
     else:
         conn.close()
 
-st.title("🧩 Autism Progress-Tracking Dashboard")
+st.title("🧩 Autism Hacked")
 
 # --- QUERY SECTION WITH DYNAMIC CHART COLORS ---
 if menu == "📊 Child Progress Logs":
@@ -399,7 +520,6 @@ elif menu == "📈 Parent vs Consultant Ratings":
     df = run_query(query, (child_id,))
     st.dataframe(df, use_container_width=True)
     
-    # 🎨 DYNAMIC CHART: Parent vs Consultant
     if not df.empty:
         df_melted = df.melt(id_vars=['child_name'], 
                             value_vars=['parent_rating', 'consultant_rating'],
@@ -411,7 +531,7 @@ elif menu == "📈 Parent vs Consultant Ratings":
             color=alt.Color('Rating Type:N', 
                             scale=alt.Scale(
                                 domain=['parent_rating', 'consultant_rating'],
-                                range=[color_parent, color_consultant]  # 👈 LIVE COLORS
+                                range=[color_parent, color_consultant]
                             ),
                             legend=alt.Legend(title='Rater')),
             tooltip=['child_name', 'Rating Type', 'Rating']
@@ -437,7 +557,6 @@ elif menu == "📋 Progress Summary (Completed/Attempted)":
     df = run_query(query)
     st.dataframe(df, use_container_width=True)
     
-    # 🎨 DYNAMIC CHART: Completed vs Attempted
     if not df.empty:
         df_melted = df.melt(id_vars=['child_name'], 
                             value_vars=['completed_count', 'attempted_count'],
@@ -449,7 +568,7 @@ elif menu == "📋 Progress Summary (Completed/Attempted)":
             color=alt.Color('Status:N', 
                             scale=alt.Scale(
                                 domain=['completed_count', 'attempted_count'],
-                                range=[color_completed, color_attempted]  # 👈 LIVE COLORS
+                                range=[color_completed, color_attempted]
                             ),
                             legend=alt.Legend(title='Progress')),
             tooltip=['child_name', 'Status', 'Count']
