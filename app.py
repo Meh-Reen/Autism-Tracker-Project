@@ -272,6 +272,41 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ===== 🎉 CONFETTI BACKGROUND =====
+st.markdown("""
+<style>
+    /* Set the main background to your confetti image */
+    .stApp {
+        background-image: url('https://raw.githubusercontent.com/Meh-Reen/Autism-Tracker-Project/refs/heads/main/confetti.png');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+
+    /* Add a semi-transparent overlay so text stays readable */
+    .stApp::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.85); /* White overlay, 85% opacity */
+        z-index: -1;
+    }
+
+    /* Make sure the app content sits above the overlay */
+    .stApp {
+        z-index: 1;
+    }
+
+    /* For DARK MODE: Use a dark overlay so text is still readable */
+    [data-theme="dark"] .stApp::before {
+        background-color: rgba(0, 0, 0, 0.80); /* Dark overlay, 80% opacity */
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Sidebar with reset button and dynamic colors
 with st.sidebar:
     st.title("🧩 Navigation")
