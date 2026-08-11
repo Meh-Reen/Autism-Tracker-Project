@@ -153,7 +153,7 @@ def run_query(query, params=()):
     return df
 
 # --- APP STARTS HERE ---
-st.set_page_config(page_title="Autism Hacked", layout="wide")
+st.set_page_config(page_title="🧠 Autism Hacked", layout="wide")
 
 # ===== 🎨 COMPLETE THEME (Montserrat + Confetti Colors) =====
 st.markdown("""
@@ -272,24 +272,30 @@ st.markdown("""
         box-shadow: 0 8px 30px rgba(255, 185, 101, 0.5) !important;
     }
 
-    /* ===== METRICS / CARDS ===== */
+    /* ===== METRICS / CARDS - FIXED! ===== */
     .stMetric {
-        background: rgba(255, 255, 255, 0.85) !important;
+        background: rgba(255, 255, 255, 0.95) !important;
         backdrop-filter: blur(10px) !important;
         border-radius: 20px !important;
-        padding: 20px !important;
+        padding: 25px !important;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
-        border: 1px solid rgba(129, 190, 228, 0.15) !important;
+        border: 2px solid #81BEE4 !important;
     }
 
     .stMetric label {
-        color: #6B7280 !important;
-        font-weight: 500 !important;
+        color: #2D3436 !important;
+        font-weight: 600 !important;
+        font-size: 16px !important;
     }
 
     .stMetric .stMetricValue {
         color: #2D3436 !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
+        font-size: 2.8rem !important;
+    }
+
+    .stMetric .stMetricDelta {
+        color: #6B7280 !important;
     }
 
     /* ===== DATAFRAMES ===== */
@@ -297,7 +303,8 @@ st.markdown("""
         border-radius: 16px !important;
         overflow: hidden !important;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
-        border: 1px solid rgba(129, 190, 228, 0.1) !important;
+        border: 1px solid rgba(129, 190, 228, 0.2) !important;
+        background: white !important;
     }
 
     .stDataFrame thead th {
@@ -305,12 +312,14 @@ st.markdown("""
         color: white !important;
         font-weight: 600 !important;
         font-family: 'Montserrat', sans-serif !important;
+        padding: 12px !important;
     }
 
     .stDataFrame tbody td {
         background: white !important;
         color: #2D3436 !important;
         font-family: 'Montserrat', sans-serif !important;
+        padding: 10px !important;
     }
 
     .stDataFrame tbody tr:hover td {
@@ -321,8 +330,13 @@ st.markdown("""
     .stAlert {
         border-radius: 16px !important;
         border-left: 5px solid #81BEE4 !important;
-        background: rgba(255, 255, 255, 0.9) !important;
+        background: rgba(255, 255, 255, 0.95) !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+        color: #2D3436 !important;
+    }
+
+    .stAlert .stAlertContent {
+        color: #2D3436 !important;
     }
 
     /* ===== SUCCESS MESSAGES ===== */
@@ -357,7 +371,7 @@ st.markdown("""
 
     /* ===== RADIO BUTTONS (Sidebar Menu) ===== */
     .stRadio > div {
-        background: rgba(255, 255, 255, 0.5) !important;
+        background: rgba(255, 255, 255, 0.6) !important;
         border-radius: 12px !important;
         padding: 8px !important;
     }
@@ -368,10 +382,11 @@ st.markdown("""
         padding: 6px 12px !important;
         border-radius: 8px !important;
         transition: all 0.2s ease !important;
+        color: #2D3436 !important;
     }
 
     .stRadio label:hover {
-        background: rgba(129, 190, 228, 0.1) !important;
+        background: rgba(129, 190, 228, 0.15) !important;
     }
 
     .stRadio .stRadioChecked {
@@ -382,11 +397,11 @@ st.markdown("""
 
     /* ===== FORMS ===== */
     .stForm {
-        background: rgba(255, 255, 255, 0.7) !important;
+        background: rgba(255, 255, 255, 0.85) !important;
         backdrop-filter: blur(10px) !important;
         border-radius: 20px !important;
         padding: 20px !important;
-        border: 1px solid rgba(129, 190, 228, 0.1) !important;
+        border: 1px solid rgba(129, 190, 228, 0.15) !important;
     }
 
     /* ===== EXPANDER ===== */
@@ -458,7 +473,7 @@ st.markdown("""
 
 # Sidebar with reset button and dynamic colors
 with st.sidebar:
-    st.title("🧩 Autism Hacked")
+    st.title("🧠 Autism Hacked")
     menu = st.radio("Go to", [
         "📊 Child Progress Logs",
         "📈 Parent vs Consultant Ratings",
@@ -498,7 +513,7 @@ else:
     else:
         conn.close()
 
-st.title("🧩 Autism Hacked")
+st.title("🧠 Autism Hacked")
 
 # --- QUERY SECTION WITH DYNAMIC CHART COLORS ---
 if menu == "📊 Child Progress Logs":
