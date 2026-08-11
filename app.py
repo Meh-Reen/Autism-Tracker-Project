@@ -158,45 +158,6 @@ def run_query(query, params=()):
     df.columns = [clean_column_name(col) for col in df.columns]
     return df
 
-def add_sample_data():
-    """Adds 12 new dummy progress logs"""
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    
-    # Get IDs
-    cursor.execute("SELECT user_id FROM APP_USER WHERE name = 'Ayesha Khan' LIMIT 1")
-    user_id = cursor.fetchone()[0]
-    
-    sample_logs = [
-        # Zain Khan (child_id = 1) - Traffic Light Game (activity_id = 1)
-        (1, 1, user_id, '2026-08-05', 'Completed', 5, 'Excellent! Waited patiently for 10 seconds!'),
-        (1, 1, user_id, '2026-08-07', 'Attempted', 4, 'Needed one reminder but did well'),
-        (1, 1, user_id, '2026-08-09', 'Completed', 5, 'Perfect! No prompts needed'),
-        (1, 1, user_id, '2026-08-11', 'Completed', 4, 'Great improvement this week'),
-        
-        # Zain Khan - Picture Card Requests (activity_id = 2)
-        (1, 2, user_id, '2026-08-04', 'Attempted', 3, 'Still learning to point consistently'),
-        (1, 2, user_id, '2026-08-06', 'Completed', 4, 'Pointed to the right card most times!'),
-        (1, 2, user_id, '2026-08-08', 'Completed', 5, 'Amazing! Used cards to request 3 times'),
-        (1, 2, user_id, '2026-08-10', 'Completed', 5, 'Very consistent this week'),
-        
-        # Hania Malik (child_id = 2) - Texture Box Exploration (activity_id = 3)
-        (2, 3, user_id, '2026-08-03', 'Attempted', 3, 'Hesitant at first, touched one texture'),
-        (2, 3, user_id, '2026-08-05', 'Attempted', 4, 'Touched 2 textures!'),
-        (2, 3, user_id, '2026-08-07', 'Completed', 5, 'Explored all textures confidently!'),
-        (2, 3, user_id, '2026-08-09', 'Completed', 5, 'Loved the fluffy texture the most'),
-    ]
-    
-    for log in sample_logs:
-        cursor.execute("""
-            INSERT INTO PROGRESS_LOG (child_id, activity_id, recorded_by, log_date, status, parent_rating, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, log)
-    
-    conn.commit()
-    conn.close()
-    st.success("✅ 12 new progress logs added successfully!")
-
 # --- APP STARTS HERE ---
 st.set_page_config(page_title="🧠 Autism Hacked", layout="wide")
 
@@ -456,26 +417,6 @@ st.markdown("""
         border: 1px solid rgba(129, 190, 228, 0.15) !important;
     }
 
-    /* ===== EXPANDER ===== */
-    .streamlit-expanderHeader {
-        font-family: 'Montserrat', sans-serif !important;
-        font-weight: 600 !important;
-        color: #2D3436 !important;
-        background: rgba(255, 255, 255, 0.5) !important;
-        border-radius: 12px !important;
-    }
-
-    /* ===== SLIDER ===== */
-    .stSlider .stSliderTrack {
-        background: #81BEE4 !important;
-    }
-
-    .stSlider .stSliderThumb {
-        background: #C898DF !important;
-        border: 3px solid white !important;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
-    }
-
     /* ===== DIVIDERS ===== */
     hr {
         border: none !important;
@@ -509,7 +450,6 @@ st.markdown("""
         color: white !important;
     }
 
-    /* ===== SIDEBAR SUBTEXT ===== */
     .stSidebar .stCaption {
         color: #6B7280 !important;
         font-weight: 400 !important;
@@ -522,7 +462,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar with reset button and dynamic colors
+# --- SIDEBAR ---
 with st.sidebar:
     st.title("🧠 Autism Hacked")
     menu = st.radio("Go to", [
@@ -535,18 +475,13 @@ with st.sidebar:
     ])
     st.markdown("---")
     
-    col_btn1, col_btn2 = st.columns(2)
-    with col_btn1:
-        if st.button("🔄 Reset Database", type="secondary"):
-            reset_database()
-    with col_btn2:
-        if st.button("📥 Add Sample Data", type="primary"):
-            add_sample_data()
-            st.rerun()
+    # Single Reset Database button (removed the "Add Sample Data" button)
+    if st.button("🔄 Reset Database", type="secondary"):
+        reset_database()
     
     child_id = st.number_input("Filter by Child ID (1 or 2)", min_value=1, value=1, step=1)
     
-    # ===== 🎨 DYNAMIC COLOR PICKERS (LIVE!) =====
+    # ===== 🎨 DYNAMIC COLOR PICKERS =====
     st.markdown("---")
     st.subheader("🎨 Chart Colors")
     
@@ -572,7 +507,7 @@ else:
 
 st.title("🧠 Autism Hacked")
 
-# --- QUERY SECTION WITH DYNAMIC CHART COLORS ---
+# --- QUERY SECTION WITH BEAUTIFUL CHARTS ---
 if menu == "📊 Child Progress Logs":
     st.header("Progress Logs for Child")
     query = """SELECT pl.log_date, a.name AS activity, pl.status, pl.parent_rating, pl.notes
@@ -597,17 +532,31 @@ elif menu == "📈 Parent vs Consultant Ratings":
                             value_vars=['Parent Rating', 'Consultant Rating'],
                             var_name='Rating Type', 
                             value_name='Rating')
-        chart = alt.Chart(df_melted).mark_bar().encode(
-            x=alt.X('Child Name:N', title=''),
-            y=alt.Y('Rating:Q', title='Rating (1-5)'),
+        chart = alt.Chart(df_melted).mark_bar(
+            size=40,  # 👈 Thicker bars
+            cornerRadiusTopLeft=4,
+            cornerRadiusTopRight=4
+        ).encode(
+            x=alt.X('Child Name:N', title='', axis=alt.Axis(labelFontSize=14, labelFontWeight='600')),
+            y=alt.Y('Rating:Q', title='Rating (1-5)', 
+                    axis=alt.Axis(grid=True, gridColor='#E5E7EB', titleFontSize=14, labelFontSize=12)),
             color=alt.Color('Rating Type:N', 
                             scale=alt.Scale(
                                 domain=['Parent Rating', 'Consultant Rating'],
                                 range=[color_parent, color_consultant]
                             ),
-                            legend=alt.Legend(title='')),
+                            legend=alt.Legend(title='', orient='top', labelFontSize=13)),
             tooltip=['Child Name', 'Rating Type', 'Rating']
-        ).properties(height=400)
+        ).properties(
+            height=350
+        ).configure_view(
+            strokeWidth=0,
+            fill='transparent'
+        ).configure_axis(
+            gridColor='#E5E7EB',
+            labelColor='#4B5563',
+            titleColor='#1F2937'
+        )
         st.altair_chart(chart, use_container_width=True)
 
 elif menu == "🎯 Recommended Goals & Activities":
@@ -634,17 +583,31 @@ elif menu == "📋 Progress Summary (Completed/Attempted)":
                             value_vars=['Completed Count', 'Attempted Count'],
                             var_name='Status', 
                             value_name='Count')
-        chart = alt.Chart(df_melted).mark_bar().encode(
-            x=alt.X('Child Name:N', title=''),
-            y=alt.Y('Count:Q', title='Number of Activities'),
+        chart = alt.Chart(df_melted).mark_bar(
+            size=40,  # 👈 Thicker bars
+            cornerRadiusTopLeft=4,
+            cornerRadiusTopRight=4
+        ).encode(
+            x=alt.X('Child Name:N', title='', axis=alt.Axis(labelFontSize=14, labelFontWeight='600')),
+            y=alt.Y('Count:Q', title='Number of Activities', 
+                    axis=alt.Axis(grid=True, gridColor='#E5E7EB', titleFontSize=14, labelFontSize=12)),
             color=alt.Color('Status:N', 
                             scale=alt.Scale(
                                 domain=['Completed Count', 'Attempted Count'],
                                 range=[color_completed, color_attempted]
                             ),
-                            legend=alt.Legend(title='')),
+                            legend=alt.Legend(title='', orient='top', labelFontSize=13)),
             tooltip=['Child Name', 'Status', 'Count']
-        ).properties(height=400)
+        ).properties(
+            height=350
+        ).configure_view(
+            strokeWidth=0,
+            fill='transparent'
+        ).configure_axis(
+            gridColor='#E5E7EB',
+            labelColor='#4B5563',
+            titleColor='#1F2937'
+        )
         st.altair_chart(chart, use_container_width=True)
 
 elif menu == "⏳ Pending Consultant Reviews":
