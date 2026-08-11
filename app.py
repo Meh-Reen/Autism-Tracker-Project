@@ -3,6 +3,7 @@ import sqlite3
 import pandas as pd
 import os
 import altair as alt
+from datetime import datetime, timedelta
 
 DB_NAME = "autism_progress.db"
 
@@ -147,8 +148,6 @@ def reset_database():
     st.rerun()
 
 def clean_column_name(col):
-    """Convert snake_case to Title Case with spaces"""
-    # Remove underscores and capitalize each word
     words = col.split('_')
     return ' '.join(word.capitalize() for word in words)
 
@@ -156,9 +155,47 @@ def run_query(query, params=()):
     conn = sqlite3.connect(DB_NAME)
     df = pd.read_sql_query(query, conn, params=params)
     conn.close()
-    # Clean column names
     df.columns = [clean_column_name(col) for col in df.columns]
     return df
+
+def add_sample_data():
+    """Adds 12 new dummy progress logs"""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    
+    # Get IDs
+    cursor.execute("SELECT user_id FROM APP_USER WHERE name = 'Ayesha Khan' LIMIT 1")
+    user_id = cursor.fetchone()[0]
+    
+    sample_logs = [
+        # Zain Khan (child_id = 1) - Traffic Light Game (activity_id = 1)
+        (1, 1, user_id, '2026-08-05', 'Completed', 5, 'Excellent! Waited patiently for 10 seconds!'),
+        (1, 1, user_id, '2026-08-07', 'Attempted', 4, 'Needed one reminder but did well'),
+        (1, 1, user_id, '2026-08-09', 'Completed', 5, 'Perfect! No prompts needed'),
+        (1, 1, user_id, '2026-08-11', 'Completed', 4, 'Great improvement this week'),
+        
+        # Zain Khan - Picture Card Requests (activity_id = 2)
+        (1, 2, user_id, '2026-08-04', 'Attempted', 3, 'Still learning to point consistently'),
+        (1, 2, user_id, '2026-08-06', 'Completed', 4, 'Pointed to the right card most times!'),
+        (1, 2, user_id, '2026-08-08', 'Completed', 5, 'Amazing! Used cards to request 3 times'),
+        (1, 2, user_id, '2026-08-10', 'Completed', 5, 'Very consistent this week'),
+        
+        # Hania Malik (child_id = 2) - Texture Box Exploration (activity_id = 3)
+        (2, 3, user_id, '2026-08-03', 'Attempted', 3, 'Hesitant at first, touched one texture'),
+        (2, 3, user_id, '2026-08-05', 'Attempted', 4, 'Touched 2 textures!'),
+        (2, 3, user_id, '2026-08-07', 'Completed', 5, 'Explored all textures confidently!'),
+        (2, 3, user_id, '2026-08-09', 'Completed', 5, 'Loved the fluffy texture the most'),
+    ]
+    
+    for log in sample_logs:
+        cursor.execute("""
+            INSERT INTO PROGRESS_LOG (child_id, activity_id, recorded_by, log_date, status, parent_rating, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, log)
+    
+    conn.commit()
+    conn.close()
+    st.success("✅ 12 new progress logs added successfully!")
 
 # --- APP STARTS HERE ---
 st.set_page_config(page_title="🧠 Autism Hacked", layout="wide")
@@ -498,8 +535,14 @@ with st.sidebar:
     ])
     st.markdown("---")
     
-    if st.button("🔄 Reset Database", type="secondary"):
-        reset_database()
+    col_btn1, col_btn2 = st.columns(2)
+    with col_btn1:
+        if st.button("🔄 Reset Database", type="secondary"):
+            reset_database()
+    with col_btn2:
+        if st.button("📥 Add Sample Data", type="primary"):
+            add_sample_data()
+            st.rerun()
     
     child_id = st.number_input("Filter by Child ID (1 or 2)", min_value=1, value=1, step=1)
     
@@ -555,7 +598,7 @@ elif menu == "📈 Parent vs Consultant Ratings":
                             var_name='Rating Type', 
                             value_name='Rating')
         chart = alt.Chart(df_melted).mark_bar().encode(
-            x=alt.X('Child Name:N', title=''),  # Remove x-axis label
+            x=alt.X('Child Name:N', title=''),
             y=alt.Y('Rating:Q', title='Rating (1-5)'),
             color=alt.Color('Rating Type:N', 
                             scale=alt.Scale(
@@ -592,7 +635,7 @@ elif menu == "📋 Progress Summary (Completed/Attempted)":
                             var_name='Status', 
                             value_name='Count')
         chart = alt.Chart(df_melted).mark_bar().encode(
-            x=alt.X('Child Name:N', title=''),  # Remove x-axis label
+            x=alt.X('Child Name:N', title=''),
             y=alt.Y('Count:Q', title='Number of Activities'),
             color=alt.Color('Status:N', 
                             scale=alt.Scale(
