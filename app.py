@@ -475,7 +475,6 @@ with st.sidebar:
     ])
     st.markdown("---")
     
-    # Single Reset Database button (removed the "Add Sample Data" button)
     if st.button("🔄 Reset Database", type="secondary"):
         reset_database()
     
@@ -533,29 +532,22 @@ elif menu == "📈 Parent vs Consultant Ratings":
                             var_name='Rating Type', 
                             value_name='Rating')
         chart = alt.Chart(df_melted).mark_bar(
-            size=40,  # 👈 Thicker bars
+            size=40,
             cornerRadiusTopLeft=4,
             cornerRadiusTopRight=4
         ).encode(
-            x=alt.X('Child Name:N', title='', axis=alt.Axis(labelFontSize=14, labelFontWeight='600')),
+            x=alt.X('Child Name:N', title=''),
             y=alt.Y('Rating:Q', title='Rating (1-5)', 
-                    axis=alt.Axis(grid=True, gridColor='#E5E7EB', titleFontSize=14, labelFontSize=12)),
+                    axis=alt.Axis(grid=True)),
             color=alt.Color('Rating Type:N', 
                             scale=alt.Scale(
                                 domain=['Parent Rating', 'Consultant Rating'],
                                 range=[color_parent, color_consultant]
                             ),
-                            legend=alt.Legend(title='', orient='top', labelFontSize=13)),
+                            legend=alt.Legend(title='', orient='top')),
             tooltip=['Child Name', 'Rating Type', 'Rating']
         ).properties(
             height=350
-        ).configure_view(
-            strokeWidth=0,
-            fill='transparent'
-        ).configure_axis(
-            gridColor='#E5E7EB',
-            labelColor='#4B5563',
-            titleColor='#1F2937'
         )
         st.altair_chart(chart, use_container_width=True)
 
@@ -584,29 +576,22 @@ elif menu == "📋 Progress Summary (Completed/Attempted)":
                             var_name='Status', 
                             value_name='Count')
         chart = alt.Chart(df_melted).mark_bar(
-            size=40,  # 👈 Thicker bars
+            size=40,
             cornerRadiusTopLeft=4,
             cornerRadiusTopRight=4
         ).encode(
-            x=alt.X('Child Name:N', title='', axis=alt.Axis(labelFontSize=14, labelFontWeight='600')),
+            x=alt.X('Child Name:N', title=''),
             y=alt.Y('Count:Q', title='Number of Activities', 
-                    axis=alt.Axis(grid=True, gridColor='#E5E7EB', titleFontSize=14, labelFontSize=12)),
+                    axis=alt.Axis(grid=True)),
             color=alt.Color('Status:N', 
                             scale=alt.Scale(
                                 domain=['Completed Count', 'Attempted Count'],
                                 range=[color_completed, color_attempted]
                             ),
-                            legend=alt.Legend(title='', orient='top', labelFontSize=13)),
+                            legend=alt.Legend(title='', orient='top')),
             tooltip=['Child Name', 'Status', 'Count']
         ).properties(
             height=350
-        ).configure_view(
-            strokeWidth=0,
-            fill='transparent'
-        ).configure_axis(
-            gridColor='#E5E7EB',
-            labelColor='#4B5563',
-            titleColor='#1F2937'
         )
         st.altair_chart(chart, use_container_width=True)
 
