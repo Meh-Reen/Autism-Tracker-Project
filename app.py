@@ -3,6 +3,7 @@ import sqlite3
 import pandas as pd
 import os
 import altair as alt
+from datetime import datetime
 
 DB_NAME = "autism_progress.db"
 
@@ -147,8 +148,6 @@ def reset_database():
     st.rerun()
 
 def clean_column_name(col):
-    """Convert snake_case to Title Case with spaces"""
-    # Remove underscores and capitalize each word
     words = col.split('_')
     return ' '.join(word.capitalize() for word in words)
 
@@ -156,9 +155,29 @@ def run_query(query, params=()):
     conn = sqlite3.connect(DB_NAME)
     df = pd.read_sql_query(query, conn, params=params)
     conn.close()
-    # Clean column names
     df.columns = [clean_column_name(col) for col in df.columns]
     return df
+
+def get_children():
+    df = run_query("SELECT child_id, name FROM CHILD")
+    return df
+
+def get_activities():
+    df = run_query("SELECT activity_id, name FROM ACTIVITY")
+    return df
+
+def add_progress_log(child_id, activity_id, log_date, status, rating, notes):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    # Get the first user (Ayesha) as recorded_by for demo
+    cursor.execute("SELECT user_id FROM APP_USER WHERE name = 'Ayesha Khan' LIMIT 1")
+    user_id = cursor.fetchone()[0]
+    cursor.execute("""
+        INSERT INTO PROGRESS_LOG (child_id, activity_id, recorded_by, log_date, status, parent_rating, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (child_id, activity_id, user_id, log_date.strftime('%Y-%m-%d'), status, rating, notes))
+    conn.commit()
+    conn.close()
 
 # --- APP STARTS HERE ---
 st.set_page_config(page_title="🧠 Autism Hacked", layout="wide")
@@ -278,16 +297,7 @@ st.markdown("""
         transform: translateY(0px) !important;
     }
 
-    .stButton > button[data-baseweb="button"]:nth-child(1) {
-        background: linear-gradient(135deg, #FFB865, #FF9999) !important;
-        box-shadow: 0 4px 15px rgba(255, 185, 101, 0.3) !important;
-    }
-
-    .stButton > button[data-baseweb="button"]:nth-child(1):hover {
-        box-shadow: 0 8px 30px rgba(255, 185, 101, 0.5) !important;
-    }
-
-    /* ===== METRICS / CARDS ===== */
+    /* ===== METRICS ===== */
     .stMetric {
         background: rgba(255, 255, 255, 0.95) !important;
         backdrop-filter: blur(10px) !important;
@@ -307,10 +317,6 @@ st.markdown("""
         color: #2D3436 !important;
         font-weight: 800 !important;
         font-size: 2.8rem !important;
-    }
-
-    .stMetric .stMetricDelta {
-        color: #6B7280 !important;
     }
 
     /* ===== DATAFRAMES ===== */
@@ -342,46 +348,22 @@ st.markdown("""
         background: #F0EDE6 !important;
     }
 
-    /* ===== ALERTS ===== */
-    .stAlert {
-        border-radius: 16px !important;
-        border-left: 5px solid #81BEE4 !important;
-        background: rgba(255, 255, 255, 0.95) !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
-        color: #2D3436 !important;
+    /* ===== FORMS ===== */
+    .stForm {
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(10px) !important;
+        border-radius: 20px !important;
+        padding: 20px !important;
+        border: 1px solid rgba(129, 190, 228, 0.15) !important;
     }
 
-    .stAlert .stAlertContent {
-        color: #2D3436 !important;
-    }
-
-    .stAlert[data-baseweb="notification"] {
-        border-left-color: #D2EE6E !important;
-    }
-
-    /* ===== NUMBER INPUT ===== */
-    .stNumberInput input {
-        border-radius: 25px !important;
-        border: 2px solid #81BEE4 !important;
-        padding: 8px 16px !important;
-        font-family: 'Montserrat', sans-serif !important;
-        background: white !important;
-        color: #2D3436 !important;
-    }
-
-    .stNumberInput input:focus {
-        border-color: #C898DF !important;
-        box-shadow: 0 0 0 3px rgba(200, 152, 223, 0.2) !important;
-    }
-
-    /* ===== SELECT BOX ===== */
-    .stSelectbox select {
-        border-radius: 25px !important;
-        border: 2px solid #81BEE4 !important;
-        padding: 8px 16px !important;
-        font-family: 'Montserrat', sans-serif !important;
-        background: white !important;
-        color: #2D3436 !important;
+    /* ===== DIVIDERS ===== */
+    hr {
+        border: none !important;
+        height: 2px !important;
+        background: linear-gradient(90deg, #81BEE4, #C898DF, #FFB865, #FF9999, #D2EE6E) !important;
+        opacity: 0.5 !important;
+        margin: 20px 0 !important;
     }
 
     /* ===== RADIO BUTTONS ===== */
@@ -410,84 +392,32 @@ st.markdown("""
         border-radius: 8px !important;
     }
 
-    /* ===== FORMS ===== */
-    .stForm {
-        background: rgba(255, 255, 255, 0.85) !important;
-        backdrop-filter: blur(10px) !important;
-        border-radius: 20px !important;
-        padding: 20px !important;
-        border: 1px solid rgba(129, 190, 228, 0.15) !important;
-    }
-
-    /* ===== EXPANDER ===== */
-    .streamlit-expanderHeader {
-        font-family: 'Montserrat', sans-serif !important;
-        font-weight: 600 !important;
-        color: #2D3436 !important;
-        background: rgba(255, 255, 255, 0.5) !important;
-        border-radius: 12px !important;
-    }
-
-    /* ===== SLIDER ===== */
-    .stSlider .stSliderTrack {
-        background: #81BEE4 !important;
-    }
-
-    .stSlider .stSliderThumb {
-        background: #C898DF !important;
-        border: 3px solid white !important;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    /* ===== DIVIDERS ===== */
-    hr {
-        border: none !important;
-        height: 2px !important;
-        background: linear-gradient(90deg, #81BEE4, #C898DF, #FFB865, #FF9999, #D2EE6E) !important;
-        opacity: 0.5 !important;
-        margin: 20px 0 !important;
-    }
-
-    /* ===== COLOR PICKERS ===== */
-    .stColorPicker {
+    /* ===== NUMBER INPUT ===== */
+    .stNumberInput input {
         border-radius: 25px !important;
-    }
-
-    /* ===== TABS ===== */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px !important;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 30px !important;
-        padding: 8px 20px !important;
+        border: 2px solid #81BEE4 !important;
+        padding: 8px 16px !important;
         font-family: 'Montserrat', sans-serif !important;
-        font-weight: 500 !important;
-        background: rgba(255, 255, 255, 0.5) !important;
-        color: #6B7280 !important;
-    }
-
-    .stTabs [aria-selected="true"] {
-        background: #81BEE4 !important;
-        color: white !important;
-    }
-
-    /* ===== SIDEBAR SUBTEXT ===== */
-    .stSidebar .stCaption {
-        color: #6B7280 !important;
-        font-weight: 400 !important;
-    }
-
-    .stSidebar .stColorPicker label {
+        background: white !important;
         color: #2D3436 !important;
-        font-weight: 500 !important;
+    }
+
+    /* ===== SELECT BOX ===== */
+    .stSelectbox select {
+        border-radius: 25px !important;
+        border: 2px solid #81BEE4 !important;
+        padding: 8px 16px !important;
+        font-family: 'Montserrat', sans-serif !important;
+        background: white !important;
+        color: #2D3436 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar with reset button and dynamic colors
+# --- SIDEBAR ---
 with st.sidebar:
     st.title("🧠 Autism Hacked")
+    
     menu = st.radio("Go to", [
         "📊 Child Progress Logs",
         "📈 Parent vs Consultant Ratings",
@@ -503,7 +433,7 @@ with st.sidebar:
     
     child_id = st.number_input("Filter by Child ID (1 or 2)", min_value=1, value=1, step=1)
     
-    # ===== 🎨 DYNAMIC COLOR PICKERS (LIVE!) =====
+    # ===== 🎨 DYNAMIC COLOR PICKERS =====
     st.markdown("---")
     st.subheader("🎨 Chart Colors")
     
@@ -514,6 +444,47 @@ with st.sidebar:
     with col2:
         color_attempted = st.color_picker("🟡 Attempted", "#FFB865")
         color_consultant = st.color_picker("👩‍⚕️ Consultant", "#C898DF")
+    
+    # ===== 📝 ADD PROGRESS LOG FORM =====
+    st.markdown("---")
+    st.subheader("📝 Add Progress Log")
+    
+    with st.form("add_log_form", clear_on_submit=True):
+        # Get children and activities for dropdowns
+        children_df = get_children()
+        activities_df = get_activities()
+        
+        if not children_df.empty and not activities_df.empty:
+            # Create name → ID mappings
+            child_names = children_df['Name'].tolist()
+            activity_names = activities_df['Name'].tolist()
+            
+            selected_child = st.selectbox("👶 Child", child_names)
+            selected_activity = st.selectbox("🎯 Activity", activity_names)
+            
+            col_date, col_status = st.columns(2)
+            with col_date:
+                log_date = st.date_input("📅 Date", datetime.now())
+            with col_status:
+                status = st.selectbox("📊 Status", ["Completed", "Attempted", "Not Attempted"])
+            
+            rating = st.slider("⭐ Rating (1-5)", 1, 5, 3)
+            notes = st.text_area("📝 Notes (optional)", placeholder="Any observations...")
+            
+            submitted = st.form_submit_button("💾 Save Progress Log")
+            
+            if submitted:
+                # Get IDs from selections
+                child_id_val = children_df[children_df['Name'] == selected_child]['Child Id'].values[0]
+                activity_id_val = activities_df[activities_df['Name'] == selected_activity]['Activity Id'].values[0]
+                
+                # Insert into database
+                add_progress_log(child_id_val, activity_id_val, log_date, status, rating, notes)
+                st.success("✅ Progress log added successfully!")
+                st.balloons()
+                st.rerun()
+        else:
+            st.warning("⚠️ No children or activities found. Please add sample data first.")
 
 # Initialize database on first load
 if not os.path.exists(DB_NAME):
@@ -529,7 +500,7 @@ else:
 
 st.title("🧠 Autism Hacked")
 
-# --- QUERY SECTION WITH DYNAMIC CHART COLORS ---
+# --- QUERY SECTION ---
 if menu == "📊 Child Progress Logs":
     st.header("Progress Logs for Child")
     query = """SELECT pl.log_date, a.name AS activity, pl.status, pl.parent_rating, pl.notes
@@ -555,7 +526,7 @@ elif menu == "📈 Parent vs Consultant Ratings":
                             var_name='Rating Type', 
                             value_name='Rating')
         chart = alt.Chart(df_melted).mark_bar().encode(
-            x=alt.X('Child Name:N', title=''),  # Remove x-axis label
+            x=alt.X('Child Name:N', title=''),
             y=alt.Y('Rating:Q', title='Rating (1-5)'),
             color=alt.Color('Rating Type:N', 
                             scale=alt.Scale(
@@ -592,7 +563,7 @@ elif menu == "📋 Progress Summary (Completed/Attempted)":
                             var_name='Status', 
                             value_name='Count')
         chart = alt.Chart(df_melted).mark_bar().encode(
-            x=alt.X('Child Name:N', title=''),  # Remove x-axis label
+            x=alt.X('Child Name:N', title=''),
             y=alt.Y('Count:Q', title='Number of Activities'),
             color=alt.Color('Status:N', 
                             scale=alt.Scale(
